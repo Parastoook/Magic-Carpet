@@ -129,17 +129,18 @@ dd<-data.frame(dd)
 dd<-write.csv(dd,'all_alt_log3.csv')
 dd<-read.csv('all_alt_log3.csv')
 
+dd$choice<-ifelse(is.na(dd$choice)==T,0,dd$choice)
 
-for (i in 1:dim(dd)[1]){
-dd$choice[i]<-ifelse(as.numeric(dd$choice_tract[i])==as.numeric(dd$h_tract1[i]),1,0)
+for ( i in 1:dim(cc)[1]){
+  dd$choice<-ifelse(dd$hhid == cc$hhid[i] & dd$choice_tract == cc$h_tract1[i],1,dd$choice)
 }
 
-dd<-write.csv(dd,'all_alt_log4.csv')
 
-dd<-dd[order(dd$hhid,dd$choice),]
+write.csv(dd,'all_alt_log4.csv')
+dd<-read.csv('all_alt_log4.csv')
 
-dd1<-dd[which(is.na(dd$wtract)==F),]
-dd1<-dd1[which((dd1$wtract%in% bgtr1)==F),]
+dd1<-dd[order(dd$hhid,dd$choice),]
+
 
 dd1$transitexp = exp(dd1$MCtransit)
 dd1$walkexp = exp(dd1$MCwalk)
@@ -151,31 +152,38 @@ dd1$carexp[is.na(dd1$carexp)]<- 0
 
 dd1$logsum <- NA
 
-
 dd1$logsum <- log(dd1$carexp+dd1$transitexp+dd1$walkexp)
+
 
 dd1$choice_id<-NA
 
-for (i in 1:dim(dd1)[1]){
-  dd1$choice_id[i]<-i %% 39
+
+bb<-unique(dd1$choice_tract)
+bb<-bb[order(bb)]
+
+for (i in 1:length(bb)){
+  dd1$choice_id<-ifelse(dd1$choice_tract == bb[i],i,dd1$choice_id)
 }
 
-dd1$choice_id<-ifelse(dd1$choice_id == 0,39,dd1$choice_id)
 
-dd1$schoolrate<-dd1$gsRating
-sch_score<-sch_score[which(is.na(sch_score$gsRating)==F),]
 
-for (i in 1:dim(dd1)[1]){
-  if(is.na(dd1$gsRating[i]) ==T){
-    num<- which(tract1$NAME10 == as.character(dd1$choice_tract[i]))
-    xx<-gTouches(tract1[num,],tract1, byid=TRUE)
-    neigh<-which(xx == TRUE)
-    tract_name<-tract1$NAME10[neigh]
-    dd1$schoolrate[i]<-mean(sch_score$gsRating[which(((sch_score$tract/100) %in% as.numeric(as.character(tract_name)))==T)])
-  }
-}
 
-dd1$workhomesame<-NA
-dd1$workhomesame <-ifelse(dd1$choice_tract == dd1$wtract,1,0 )
+
+
+
+dd1$workhomesame<-0
+
+dd1$workhomesame <-ifelse(dd1$choice_tract == dd1$wtract,1,dd1$workhomesame )
+
 
 dd1$logsum.whsame <- dd1$logsum*(1-dd1$workhomesame)
+write.csv(dd1,'finalchoiceset.csv')
+
+dd1<-read.csv('finalchoiceset.csv')
+dd1$child<-ifelse(dd1$lifecycle == 2,1,0)
+
+dd1<-data.frame(dd1)
+dd1<-dd1[,-c(1,2,3,4,9,11,12,18,21,22,23,24,25)]
+dd1<-dd1[,-c(14,15,16)]
+
+write.csv(dd1,'finalchoicesetshort.csv')
